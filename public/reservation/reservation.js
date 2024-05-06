@@ -37,6 +37,28 @@ socket.on("reservationUpdate", (data) => {
     // Update UI with new reservation data (if needed)
 });
 
+// Mark already reserved seats in red
+async function markReservedSeats() {
+    try {
+        const response = await fetch('/getReservedSeats');
+        if (!response.ok) {
+            throw new Error('Failed to fetch reserved seats');
+        }
+        const reservedSeats = await response.json();
+
+        reservedSeats.forEach(seatNumber => {
+            const seat = document.querySelector(`.seat[data-number="${seatNumber}"]`);
+            if (seat) {
+                seat.classList.add("occupied");
+            }
+        });
+
+        console.log('Reserved seats marked:', reservedSeats);
+    } catch (error) {
+        console.error('Error fetching reserved seats:', error);
+    }
+}
+
 // Update the selected seats count and total price
 function updateSelectedCount() {
     const selectedSeats = document.querySelectorAll(".row .seat.selected");
@@ -53,15 +75,21 @@ function updateSelectedCount() {
     countElement.textContent = selectedSeatsCount;
     totalElement.textContent = totalPrice;
 
-    // Save the selected seats to local storage
-    saveSelectedSeats();
+    // Save the new selected seats to local storage
+    saveSelectedSeats(selectedSeats);
 }
 
 // Save the selected seats to local storage
-function saveSelectedSeats() {
-    const selectedSeats = Array.from(document.querySelectorAll(".row .seat.selected")).map(seat => seat.dataset.number);
-    localStorage.setItem("selectedSeats", JSON.stringify(selectedSeats));
+function saveSelectedSeats(selectedSeats) {
+    const seatNumbers = Array.from(selectedSeats).map(seat => seat.dataset.number);
+    localStorage.setItem("selectedSeats", JSON.stringify(seatNumbers));
     console.log("Selected seats saved to local storage.");
+}
+
+// Function to clear local storage
+function clearLocalStorage() {
+    localStorage.removeItem("selectedSeats");
+    console.log("Local storage cleared.");
 }
 
 // Populate the UI with data from local storage
@@ -76,19 +104,6 @@ function populateUI() {
         });
     }
     console.log("UI populated with data from local storage.");
-}
-
-// Mark already reserved seats in red
-function markReservedSeats() {
-    // Simulated reserved seats (replace with actual data from the server)
-    const reservedSeats = [2, 8, 10, 15, 20]; // Example reserved seat numbers
-
-    reservedSeats.forEach(seatNumber => {
-        const seat = document.querySelector(`.seat[data-number="${seatNumber}"]`);
-        if (seat) {
-            seat.classList.add("occupied");
-        }
-    });
 }
 
 // Event delegation for seat selection
@@ -125,13 +140,13 @@ document.querySelector('#reserve-button').addEventListener('click', async (e) =>
     console.log("Time:", time);
     console.log("Table Numbers:", tableNumbers);
 
-    const data = tableNumbers.map(tableNumber => ({
+    const data = {
         userName: name,
         emailAddress: email,
         date: date,
         time: time,
-        tableNumber: tableNumbers
-    }));
+        tableNumbers: tableNumbers
+    };
 
     try {
         const response = await fetch('/sendData', {
@@ -141,8 +156,10 @@ document.querySelector('#reserve-button').addEventListener('click', async (e) =>
             },
             body: JSON.stringify(data)
         });
+
         if (response.ok) {
             console.log("Data sent successfully");
+            clearLocalStorage();
         } else {
             console.error("Failed to send data");
         }
@@ -150,3 +167,4 @@ document.querySelector('#reserve-button').addEventListener('click', async (e) =>
         console.error("Error:", error);
     }
 });
+

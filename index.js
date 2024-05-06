@@ -2,7 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
 const http = require("http");
-const socketIo = require("socket.io");
+const { Server } = require("socket.io");
 
 const app = express();
 const PORT = 3001;
@@ -24,7 +24,7 @@ const dataSchema = new mongoose.Schema({
     emailAddress: String,
     date: Date,
     time: String,
-    tableNumber: Array
+    tableNumbers: Array
 });
 const Data = mongoose.model('reservations', dataSchema);
 
@@ -76,6 +76,19 @@ app.post('/sendData', async (req, res) => {
     }
 });
 
+// Route to get reserved seats from the database
+app.get("/getReservedSeats", async (req, res) => {
+    try {
+        const reservedSeats = await Data.find().distinct('tableNumbers');
+
+        res.json(reservedSeats);
+    } catch (error) {
+        console.error('Error fetching reserved seats:', error);
+        res.status(500).json({ message: 'Failed to fetch reserved seats' });
+    }
+});
+
+
 app.get("/", (req, res) => {
     res.set("Allow-acces-Allow-Origin", '*');
     res.redirect('/homepage/homepage.html');
@@ -83,7 +96,7 @@ app.get("/", (req, res) => {
 
 // Start server
 const server = http.createServer(app);
-const io = socketIo(server);
+const io = new Server(server);
 
 io.on("connection", (socket) => {
     console.log("Client connected");

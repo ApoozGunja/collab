@@ -58,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Countdown function
 function countdown() {
-  const eventDate = new Date('2024-04-30 18:00:00').getTime(); // Change to your event date and time
+  const eventDate = new Date('2024-05-30 18:00:00').getTime(); // Change to your event date and time
   const now = new Date().getTime();
   const distance = eventDate - now;
 
